@@ -10,19 +10,19 @@ import {
 } from "@chatscope/chat-ui-kit-react";
 import { clothItemsForSale } from "./clothingItems";
 
-const API_KEY = "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";
+const API_KEY =
+  "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";
 // "Explain things like you would to a 10 year old learning how to code."
 const systemMessage = {
   //  Explain things like you're talking to a software professional with 5 years of experience.
   role: "system",
-  content:
-  `You are a ChatBot for a clothing store that sells the following items: ${clothItemsForSale}.
+  content: `You are a ChatBot for a clothing store that sells the following items: ${clothItemsForSale}.
    this is our return and exchange policy:
     - You can return or exchange any item within 30 days of purchase.
     - Items must be unworn and unwashed.
     - Underwear and socks are final sale.
     - Items must have all tags attached.
-  `
+  `,
 };
 
 function ChatBot() {
@@ -81,36 +81,36 @@ function ChatBot() {
         ...apiMessages, // The messages from our chat with ChatGPT
       ],
       temperature: 0,
-      max_tokens:200
+      max_tokens: 200,
     };
 
     try {
       await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + API_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(apiRequestBody),
-    })
-      .then((data) => {
-        return data.json();
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(apiRequestBody),
       })
-      .then((data) => {
-        console.log(data);
-        setMessages([
-          ...chatMessages,
-          {
-            message: data.choices[0].message.content,
-            sender: "ChatGPT",
-            clothingInfo: data?.choices[0].message.clothingInfo,
-          },
-        ]);
-        setIsTyping(false);
-      });
+        .then((data) => {
+          console.log(data);
+          return data.json();
+        })
+        .then((data) => {
+          console.log(data);
+          setMessages([
+            ...chatMessages,
+            {
+              message: data.choices[0].message.content,
+              sender: "ChatGPT",
+              clothingInfo: data?.choices[0].message.clothingInfo,
+            },
+          ]);
+          setIsTyping(false);
+        });
     } catch (error) {
       console.log(error);
-
     } finally {
       setIsTyping(false);
     }
