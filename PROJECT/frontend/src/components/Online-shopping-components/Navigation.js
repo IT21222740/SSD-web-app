@@ -1,7 +1,6 @@
 import React from "react";
 import "bulma/css/bulma.min.css";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
 
 import {
   Badge,
@@ -20,16 +19,17 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 import { getError } from "./Utils";
-import SearchBox from "../../pages/Shop_pages/SearchBox";
 
 import { createContext } from "react";
 import AnimatedRoutes from "./AnimatedRoutes";
 import Logo from "../../Images/33.jpg";
-import Router from "./routes";
+import { useAuth0 } from "@auth0/auth0-react";
+
 export const ThemeContext = createContext(null);
 
 function Navigation() {
   const [theme, setTheme] = useState("light");
+  const { user, isAuthenticated, loginWithRedirect, logout } = useAuth0();
 
   const toggleTheme = () => {
     setTheme((curr) => (curr === "light" ? "dark" : "light"));
@@ -56,6 +56,12 @@ function Navigation() {
     localStorage.removeItem("shippingAddress");
     window.location.href = "/Customer_Login";
   };
+  const logoutWithRedirect = () =>
+    logout({
+      logoutParams: {
+        returnTo: window.location.origin,
+      },
+    });
   return (
     <div>
       <Navbar bg="light" variant="light">
@@ -88,8 +94,35 @@ function Navigation() {
                 </Badge>
               )}
             </Link>
+            {!isAuthenticated && (
+              <li>
+                <button
+                  className="nav-link"
+                  onClick={() => loginWithRedirect()}
+                >
+                  Log in
+                </button>
+              </li>
+            )}
+            {isAuthenticated && (
+              <NavDropdown title={user.name} id="basic-nav-dropdown">
+                <LinkContainer to="/orderList">
+                  <NavDropdown.Item>OrderList</NavDropdown.Item>
+                </LinkContainer>
 
-            {userInfo ? (
+                <NavDropdown.Divider />
+
+                <Link
+                  className="dropdown-item"
+                  to="#signout"
+                  onClick={() => logoutWithRedirect()}
+                >
+                  Log out
+                </Link>
+              </NavDropdown>
+            )}
+
+            {/* {userInfo ? (
               <NavDropdown title={userInfo.name} id="basic-nav-dropdown">
                 <LinkContainer to="/orderList">
                   <NavDropdown.Item>OrderList</NavDropdown.Item>
@@ -113,7 +146,7 @@ function Navigation() {
                   Sign up
                 </Link>
               </NavDropdown>
-            )}
+            )} */}
             {userInfo && userInfo.isAdmin && (
               <NavDropdown title="Admin" id="admin-nav-dropdown">
                 <LinkContainer to="/dashboard/app">
@@ -121,8 +154,6 @@ function Navigation() {
                 </LinkContainer>
               </NavDropdown>
             )}
-
-           
             {userInfo && userInfo.isCustomer && (
               <NavDropdown title="Services" id="admin-nav-dropdown">
                 <LinkContainer to="/ChatBot">
@@ -133,8 +164,6 @@ function Navigation() {
                 </LinkContainer>
               </NavDropdown>
             )}
-
-          
           </Nav>
         </Container>
       </Navbar>

@@ -12,7 +12,6 @@ import Axios from "axios";
 import { message } from "antd";
 
 import { Store } from "../Online-shopping-components/Store";
-import { toast } from "react-toastify";
 
 export default function Customer_Login() {
   const navigate = useNavigate();
