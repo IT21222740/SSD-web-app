@@ -20,7 +20,7 @@ function Clothings() {
       try {
         setLoading(true);
         const response = await axios.get(
-          `https://api.lykdat.com/text-search?api_key=AIzaSyCV8JzIypjF2FtVTCTs4JmGZT4eisg0xkA&query=${dress}`
+          `https://api.lykdat.com/text-search?api_key=${process.env.REACT_APP_GAPI_KEY}&query=${dress}`
         );
         console.log(response);
         if (gender) {

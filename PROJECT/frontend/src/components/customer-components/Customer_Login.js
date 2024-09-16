@@ -4,10 +4,8 @@ import styles from "./Customer_Login.module.css";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import avatar from "../../assets/images/CustomerAvatar.jpg";
 import { Toaster } from "react-hot-toast";
-import { useFormik } from "formik";
-import { userNameValidate } from "./Validate";
+
 import { motion } from "framer-motion";
-import { useAuthStore } from "./store.js";
 import Axios from "axios";
 import { message } from "antd";
 
