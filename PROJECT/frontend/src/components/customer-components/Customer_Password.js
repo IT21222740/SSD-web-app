@@ -17,9 +17,6 @@ export default function Customer_Password() {
   const [{ isloading, apiData, serverError }] = useFetch(`user/${username}`);
 
   const formik = useFormik({
-    initialValues: {
-      password: "admin@123",
-    },
     validate: passwordValidate,
     validateOnBlur: false,
     validateOnChange: false,
