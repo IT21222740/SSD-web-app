@@ -1,6 +1,7 @@
 require('dotenv').config()
 const express = require('express')
 const mongoose= require('mongoose')
+const helmet = require('helmet');
 
 const customer_base = require('./routes/customer/customer_base')
 
@@ -15,6 +16,7 @@ const app = express();
 //middleware
 app.use(express.json())//to add json to the 'req' Object
 
+
 app.use((req, res,next)=>{
     console.log(req.path, req.method)
     next()
@@ -28,7 +30,15 @@ app.use(morgan('dev'));//to run frontend and backend concurrently
 app.use(bodyParser.json());
 app.use(cors());
 
+app.use(
+  helmet({
+  xFrameOptions: {action: "sameorigin"},
+})); // mitigate 'ClickJacking' attaks
 
+app.use(
+  helmet({
+    xPoweredBy: false,
+  }));//remove "x-powerby header"
 
 //routes
 app.get('/api/keys/paypal', (req, res) => {
