@@ -10,11 +10,7 @@ import {
 } from "@chatscope/chat-ui-kit-react";
 import { clothItemsForSale } from "./clothingItems";
 
-const API_KEY =
-  "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";
-// "Explain things like you would to a 10 year old learning how to code."
 const systemMessage = {
-  //  Explain things like you're talking to a software professional with 5 years of experience.
   role: "system",
   content: `You are a ChatBot for a clothing store that sells the following items: ${clothItemsForSale}.
    this is our return and exchange policy:
@@ -46,18 +42,11 @@ function ChatBot() {
 
     setMessages(newMessages);
 
-    // Initial system message to determine ChatGPT functionality
-    // How it responds, how it talks, etc.
     setIsTyping(true);
     await processMessageToChatGPT(newMessages);
   };
 
   async function processMessageToChatGPT(chatMessages) {
-    // messages is an array of messages
-    // Format messages for chatGPT API
-    // API is expecting objects in format of { role: "user" or "assistant", "content": "message here"}
-    // So we need to reformat
-
     let apiMessages = chatMessages.map((messageObject) => {
       let role = "";
       if (messageObject.sender === "ChatGPT") {
@@ -71,9 +60,6 @@ function ChatBot() {
       };
     });
 
-    // Get the request body set up with the model we plan to use
-    // and the messages which we formatted above. We add a system message in the front to'
-    // determine how we want chatGPT to act.
     const apiRequestBody = {
       model: "gpt-3.5-turbo",
       messages: [
@@ -88,7 +74,7 @@ function ChatBot() {
       await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
-          Authorization: "Bearer " + API_KEY,
+          Authorization: "Bearer " + process.env.CHATBOT_API_KEY,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(apiRequestBody),

@@ -15,13 +15,6 @@ export default function Customer_Register() {
   const [file, setFile] = useState();
 
   const formik = useFormik({
-    initialValues: {
-      name: "",
-      email: "@gmail.com",
-      password: "admin@123",
-      profile: "",
-      isCustomer: true,
-    },
     validate: registerValidation,
     validateOnBlur: false,
     validateOnChange: false,

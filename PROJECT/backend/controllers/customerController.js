@@ -51,11 +51,10 @@ const register = async (req, res) => {
   const user = new customerModel({
     name: name,
     email: email,
-    username:name,
+    username: name,
     password: bcryptt.hashSync(password),
     profile: profile,
     isCustomer: true,
-    
   });
   // Check if the user already exists in the database
   const existingUser = await customerModel.findOne({
@@ -112,7 +111,9 @@ const login = async (req, res) => {
         return res.status(404).send({ error: "Name not found..!" });
       });
   } catch (error) {
-    return res.status(500).send(error);
+    return res
+      .status(500)
+      .send("An error occurred during login. Please try again later.");
   }
 };
 
@@ -122,7 +123,7 @@ const getUser = async (req, res) => {
   try {
     if (!name) return res.status(501).send({ error: "Invalid Name." });
     customerModel.findOne({ name }, function (err, user) {
-      if (err) return res.status(500).send({ err });
+      if (err) return res.status(500).send({ error: "Internal Server Error" });
       if (!user)
         return res.status(501).send({ error: "Couldn't find the user" });
 

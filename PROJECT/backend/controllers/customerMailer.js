@@ -1,6 +1,7 @@
 const nodemailer = require("nodemailer");
 const Mailgen = require("mailgen");
 const ENV = require("../routes/customer/config");
+const xss = require("xss");
 
 // https://ethereal.email/create
 let nodeConfig = {
@@ -45,7 +46,7 @@ const registerMail = async (req, res) => {
         "Need help , or have questions? Just reply to this email, we would love to help you.",
     },
   };
-  var emailBody = MailGenerator.generate(email);
+  var emailBody = xss(MailGenerator.generate(email));
 
   let message = {
     from: ENV.EMAIL,
@@ -61,7 +62,7 @@ const registerMail = async (req, res) => {
         .status(200)
         .send({ msg: "You should receive an email from us." });
     })
-    .catch((error) => res.status(500).send({ error }));
+    .catch((error) => res.status(500).send("Error occured during the Process"));
 };
 
 module.exports = {

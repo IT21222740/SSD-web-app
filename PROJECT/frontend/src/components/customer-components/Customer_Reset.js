@@ -18,11 +18,6 @@ export default function Customer_Reset() {
     useFetch("createResetSession");
 
   const formik = useFormik({
-    initialValues: {
-      password: "admin@123",
-      confirm_pwd: "admin@123",
-    },
-
     validate: resetPasswordValidation,
     validateOnBlur: false,
     validateOnChange: false,
