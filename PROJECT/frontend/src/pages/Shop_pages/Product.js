@@ -6,23 +6,23 @@ import React, {
   useReducer,
   useRef,
   useState,
+  useCallback,
 } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import { Card, ListGroup, Badge, Button, Form } from "react-bootstrap";
+import { Card, ListGroup, Badge, Button, Form, Spinner } from "react-bootstrap";
 import { Helmet } from "react-helmet-async";
 import { Store } from "../../components/Online-shopping-components/Store";
 import Rating from "../../components/Online-shopping-components/Rating";
 import FloatingLabel from "react-bootstrap/FloatingLabel";
-
 import MessageBox from "../../components/Online-shopping-components/MessageBox";
-import LoadingBox from "../../components/Online-shopping-components/LoadingBox";
 import { getError } from "../../components/Online-shopping-components/Utils";
 import { motion } from "framer-motion";
 import { message } from "antd";
+import DOMPurify from "dompurify";
 import "./product.css";
-import { toast } from "react-toastify";
+
 const reducer = (state, action) => {
   switch (action.type) {
     case "REFRESH_PRODUCT":
@@ -33,108 +33,128 @@ const reducer = (state, action) => {
       return { ...state, loadingCreateReview: false };
     case "CREATE_FAIL":
       return { ...state, loadingCreateReview: false };
-    case "FETCH REQUEST":
+    case "FETCH_REQUEST":
       return { ...state, loading: true };
-    case "FETCH SUCCESS":
+    case "FETCH_SUCCESS":
       return { ...state, product: action.payload, loading: false };
-    case "FETCH FAIL":
+    case "FETCH_FAIL":
       return { ...state, loading: false, error: action.payload };
     default:
       return state;
   }
 };
-function Product() {
-  let reviewsRef = useRef();
 
+function Product() {
+  const isValidImageUrl = (url) => {
+    return url?.startsWith("http") && /\.(jpeg|jpg|gif|png)$/.test(url);
+  };
+
+  const reviewsRef = useRef();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const navigate = useNavigate();
-  const params = useParams();
-  const { id } = params;
+  const { id } = useParams();
   const [{ loading, error, product, loadingCreateReview }, dispatch] =
     useReducer(reducer, {
-      product: [],
+      product: {},
       loading: true,
       error: "",
     });
-  // const [products , setProducts] = useState([]);
+
   useEffect(() => {
     const fetchData = async () => {
-      dispatch({ type: "FETCH REQUEST" });
+      dispatch({ type: "FETCH_REQUEST" });
       try {
         const result = await axios.get(`/api/products/id/${id}`);
-        dispatch({ type: "FETCH SUCCESS", payload: result.data });
+        dispatch({ type: "FETCH_SUCCESS", payload: result.data });
       } catch (error) {
-        dispatch({ type: "FETCH FAIL", payload: error.message });
+        dispatch({ type: "FETCH_FAIL", payload: getError(error) });
       }
-
-      //setProducts(result.data);
     };
     fetchData();
   }, [id]);
+
   const { state, dispatch: ctxDispatch } = useContext(Store);
   const { cart, userInfo } = state;
-  const addToCartHandler = async () => {
-    const existITem = cart.cartItems.find((x) => x._id === product._id);
-    const quantity = existITem ? existITem.quantity + 1 : 1;
+
+  const addToCartHandler = useCallback(async () => {
+    const existItem = cart.cartItems.find((x) => x._id === product._id);
+    const quantity = existItem ? existItem.quantity + 1 : 1;
     const { data } = await axios.get(`/api/products/${product._id}`);
+
     if (data.countInStock < quantity) {
-      window.alert("Sorry the product is out of stock");
+      message.error("Sorry, the product is out of stock");
       return;
     }
+
     ctxDispatch({ type: "CART_ADD_ITEM", payload: { ...product, quantity } });
     navigate("/cart");
-  };
-  const Customize = () => {
-    navigate("/homeee");
-  };
+  }, [cart.cartItems, ctxDispatch, navigate, product]);
 
-  const submitHandler = async (e) => {
-    e.preventDefault();
-    if (!comment || !rating) {
-      message.error("Please enter comment and rating");
-      return;
-    }
-    try {
-      const { data } = await axios.post(
-        `/api/products/${product._id}/reviews`,
-        { rating, comment, name: userInfo.name }
-      );
+  const submitHandler = useCallback(
+    async (e) => {
+      e.preventDefault();
+      if (!comment || !rating) {
+        message.error("Please enter comment and rating");
+        return;
+      }
 
-      dispatch({
-        type: "CREATE_SUCCESS",
-      });
-      message.success("Review submit succesfully");
-      // toast.promise(registerPromise, {
-      //   loading: "Creating...",
-      //   success: <b>Register Successfully..! </b>,
-      //   error: <b>Could not register.</b>,
-      // });
-      product.reviews.unshift(data.review);
-      product.numReviews = data.numReviews;
-      product.rating = data.rating;
-      dispatch({ type: "REFRESH_PRODUCT", payload: product });
-      window.scrollTo({
-        behavior: "smooth",
-        top: reviewsRef.current.offsetTop,
-      });
-    } catch (error) {
-      dispatch({ type: "CREATE_FAIL" });
-    }
-  };
+      try {
+        // Sanitize inputs before sending
+        const sanitizedComment = DOMPurify.sanitize(comment);
+        const sanitizedName = DOMPurify.sanitize(userInfo.name);
+        const sanitizedRating = parseInt(rating, 10);
+
+        const { data } = await axios.post(
+          `/api/products/${product._id}/reviews`,
+          {
+            rating: sanitizedRating,
+            comment: sanitizedComment,
+            name: sanitizedName,
+          }
+        );
+
+        dispatch({ type: "CREATE_SUCCESS" });
+        message.success("Review submitted successfully");
+
+        product.reviews.unshift(data.review);
+        product.numReviews = data.numReviews;
+        product.rating = data.rating;
+        dispatch({ type: "REFRESH_PRODUCT", payload: product });
+
+        window.scrollTo({
+          behavior: "smooth",
+          top: reviewsRef.current.offsetTop,
+        });
+      } catch (error) {
+        dispatch({ type: "CREATE_FAIL" });
+        message.error(getError(error));
+      }
+    },
+    [comment, rating, product, userInfo]
+  );
+
   return loading ? (
-    <div></div>
+    <Spinner animation="border" variant="primary" />
   ) : error ? (
-    <div>{error}</div>
+    <MessageBox variant="danger">{error}</MessageBox>
   ) : (
     <motion.div
       initial={{ opacity: 0 }}
-      animate={{ opacity: 2 }}
+      animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
       <Row>
         <Col md={6}>
-          <img className="img-large" src={product.image} alt={product.name} />
+          {isValidImageUrl(product.image) ? (
+            <img
+              className="img-large"
+              src={DOMPurify.sanitize(product.image)}
+              alt={DOMPurify.sanitize(product.name)}
+            />
+          ) : (
+            <p>Invalid image format</p>
+          )}
         </Col>
         <Col md={3}>
           <ListGroup variant="flush">
@@ -142,14 +162,14 @@ function Product() {
               <Helmet>
                 <title>{product.name}</title>
               </Helmet>
-              <h1 id="names">{product.name}</h1>
+              <h1>{product.name}</h1>
             </ListGroup.Item>
             <ListGroup.Item>
               <Rating rating={product.rating} numReviews={product.numReviews} />
             </ListGroup.Item>
-            <ListGroup.Item>Price :${product.price}</ListGroup.Item>
-            <ListGroup.Item>Save 5%😄</ListGroup.Item>
-            <ListGroup.Item>Category :{product.category}</ListGroup.Item>
+            <ListGroup.Item>Price: ${product.price}</ListGroup.Item>
+            <ListGroup.Item>Save 5% 😄</ListGroup.Item>
+            <ListGroup.Item>Category: {product.category}</ListGroup.Item>
             <ListGroup.Item>
               <p>{product.description}</p>
             </ListGroup.Item>
@@ -161,14 +181,13 @@ function Product() {
               <ListGroup variant="flush">
                 <ListGroup.Item>
                   <Row>
-                    <Col>Price :</Col>
-
+                    <Col>Price:</Col>
                     <Col>${product.price}</Col>
                   </Row>
                 </ListGroup.Item>
                 <ListGroup.Item>
                   <Row>
-                    <Col>Status :</Col>
+                    <Col>Status:</Col>
                     <Col>
                       {product.countInStock > 0 ? (
                         <Badge bg="success">In Stock</Badge>
@@ -181,17 +200,12 @@ function Product() {
                 {product.countInStock > 0 && (
                   <ListGroup.Item>
                     <div className="d-grid">
-                      <Button
-                        onClick={addToCartHandler}
-                        variant="primary"
-                        id="card_btn22"
-                      >
-                        Add to cart
+                      <Button onClick={addToCartHandler} variant="primary">
+                        Add to Cart
                       </Button>
                       <Button
-                        onClick={Customize}
+                        onClick={() => navigate("/homeee")}
                         variant="primary"
-                        id="card_btn22"
                       >
                         Customize
                       </Button>
@@ -214,7 +228,7 @@ function Product() {
           {product.reviews.map((review) => (
             <ListGroup.Item key={review._id}>
               <strong>{review.name}</strong>
-              <Rating rating={review.rating} caption=" "></Rating>
+              <Rating rating={review.rating} caption=" " />
               <p>{review.createdAt.substring(0, 10)}</p>
               <p>{review.comment}</p>
             </ListGroup.Item>
@@ -232,44 +246,42 @@ function Product() {
                   onChange={(e) => setRating(e.target.value)}
                 >
                   <option value="">Select...</option>
-                  <option value="1">1- Poor</option>
-                  <option value="2">2- Fair</option>
-                  <option value="3">3- Good</option>
-                  <option value="4">4- Very good</option>
-                  <option value="5">5- Excelent</option>
+                  <option value="1">1 - Poor</option>
+                  <option value="2">2 - Fair</option>
+                  <option value="3">3 - Good</option>
+                  <option value="4">4 - Very Good</option>
+                  <option value="5">5 - Excellent</option>
                 </Form.Select>
               </Form.Group>
               <FloatingLabel
                 controlId="floatingTextarea"
-                label="Comments"
+                label="Comment"
                 className="mb-3"
               >
                 <Form.Control
                   as="textarea"
-                  placeholder="Leave a comment here"
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
+                  placeholder="Leave a comment here"
+                  style={{ height: "100px" }}
                 />
               </FloatingLabel>
-
-              <div className="mb-3">
+              <div className="d-grid">
                 <Button
                   disabled={loadingCreateReview}
                   type="submit"
-                  id="card_btn22"
+                  variant="primary"
                 >
                   Submit
                 </Button>
-                {loadingCreateReview && <LoadingBox></LoadingBox>}
+                {loadingCreateReview && (
+                  <Spinner animation="border" variant="primary" />
+                )}
               </div>
             </form>
           ) : (
             <MessageBox>
-              Please{" "}
-              <Link to={`/signin?redirect=/product/${product.id}`}>
-                Sign In
-              </Link>{" "}
-              to write a review
+              Please <Link to="/signin">sign in</Link> to write a review.
             </MessageBox>
           )}
         </div>

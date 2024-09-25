@@ -29,7 +29,6 @@ app.use((req, res, next) => {
 app.use(express.json()); //to add json to the 'req' Object
 
 app.use((req, res, next) => {
-  console.log(req.path, req.method);
   next();
 });
 
