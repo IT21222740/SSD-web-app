@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const csurf = require("csurf");
+const helmet = require("helmet");
 
 const customer_base = require("./routes/customer/customer_base");
 const onlineshop_base = require("./routes/onlineshop/onlineshop_base");
@@ -12,6 +13,9 @@ const inventory_base = require("./routes/inventory/inventory_base");
 const app = express();
 
 //middleware
+
+// Use Helmet to secure your app
+app.use(helmet());
 
 app.use((req, res, next) => {
   const metadataIP = "169.254.169.254";
