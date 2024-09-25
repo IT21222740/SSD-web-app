@@ -1,13 +1,13 @@
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
+const csurf = require("csurf");
 
 const customer_base = require("./routes/customer/customer_base");
-
 const onlineshop_base = require("./routes/onlineshop/onlineshop_base");
 const payment_base = require("./routes/payment/payment_base");
-
 const inventory_base = require("./routes/inventory/inventory_base");
+
 //express app
 const app = express();
 
@@ -32,10 +32,22 @@ app.use((req, res, next) => {
 const morgan = require("morgan");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 
 app.use(morgan("dev")); //to run frontend and backend concurrently
 app.use(bodyParser.json());
 app.use(cors());
+app.use(cookieParser());
+
+// CSRF protection middleware
+const csrfProtection = csurf({ cookie: true });
+app.use(csrfProtection);
+
+// Add CSRF token to response
+app.use((req, res, next) => {
+  res.cookie("XSRF-TOKEN", req.csrfToken());
+  next();
+});
 
 //routes
 app.get("/api/keys/paypal", (req, res) => {
