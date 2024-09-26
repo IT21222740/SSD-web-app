@@ -14,6 +14,22 @@ const app = express();
 
 //middleware
 
+// Define a list of allowed origins
+const allowedOrigins = ['http://localhost:3000'];
+
+// Configure CORS to only allow specified origins
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 // Use Helmet to secure your app
 app.use(helmet());
 
@@ -57,6 +73,24 @@ app.get("/api/keys/paypal", (req, res) => {
   res.send(process.env.PAYPAL_CLIENT_ID || "sb");
 });
 
+
+// Manually set Content-Security-Policy header for all routes
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', 
+    "default-src 'self'; script-src 'self' https://apis.google.com; style-src 'self' https://fonts.googleapis.com; img-src 'self' https://cdn.example.com; connect-src 'self' https://api.example.com; font-src 'self' https://fonts.gstatic.com; frame-src 'self' https://paypal.com; object-src 'none'; upgrade-insecure-requests; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; script-src-attr 'none'"
+  );
+  next();
+});
+
+// Serve static files and set Content-Security-Policy for static assets
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, path) => {
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+    // res.setHeader('Content-Security-Policy', 
+    //   "default-src 'self'; script-src 'self' https://apis.google.com; style-src 'self' https://fonts.googleapis.com; img-src 'self' https://cdn.example.com; connect-src 'self' https://api.example.com; font-src 'self' https://fonts.gstatic.com; frame-src 'self' https://paypal.com; object-src 'none'; upgrade-insecure-requests; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; script-src-attr 'none'"
+    // );
+  }
+}));
 customer_base(app);
 inventory_base(app);
 onlineshop_base(app);
