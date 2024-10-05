@@ -47,6 +47,7 @@ app.use(
   helmet({
   xFrameOptions: {action: "sameorigin"},
 })); // mitigate 'ClickJacking' attaks
+
 // CSRF protection middleware
 const csrfProtection = csurf({ cookie: true });
 app.use(csrfProtection);
@@ -55,6 +56,7 @@ app.use(
   helmet({
     xPoweredBy: false,
   }));//remove "x-powerby header"
+  
 // Add CSRF token to response
 app.use((req, res, next) => {
   res.cookie("XSRF-TOKEN", req.csrfToken());
